@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"greenlight.zhaksylyk.kz/internal/data"
-	"greenlight.zhaksylyk.kz/internal/validator"
+	"greenlight.aida.kz/internal/data"
+	"greenlight.aida.kz/internal/validator"
 	"net/http"
 	"time"
 )
@@ -45,8 +45,8 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		}
 		return
 	}
-	// Add the "movies:read" permission for the new user.
-	err = app.models.Permissions.AddForUser(user.ID, "movies:read")
+
+	err = app.models.Permissions.AddForUser(user.ID, "animes:read")
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -105,7 +105,7 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 	// Update the user's activation status.
 	user.Activated = true
 	// Save the updated user record in our database, checking for any edit conflicts in
-	// the same way that we did for our movie records.
+	// the same way that we did for our records.
 	err = app.models.Users.Update(user)
 	if err != nil {
 		switch {

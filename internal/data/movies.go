@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"greenlight.zhaksylyk.kz/internal/validator"
+	"greenlight.aida.kz/internal/validator"
 	"time"
 )
 
-type Movie struct {
+type Anime struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"-"`
 	Title     string    `json:"title"`
@@ -20,53 +20,53 @@ type Movie struct {
 	Version   int32     `json:"version"`
 }
 
-func ValidateMovie(v *validator.Validator, movie *Movie) {
-	v.Check(movie.Title != "", "title", "must be provided")
-	v.Check(len(movie.Title) <= 500, "title", "must not be more than 500 bytes long")
-	v.Check(movie.Year != 0, "year", "must be provided")
-	v.Check(movie.Year >= 1888, "year", "must be greater than 1888")
-	v.Check(movie.Year <= int32(time.Now().Year()), "year", "must not be in the future")
-	v.Check(movie.Runtime != 0, "runtime", "must be provided")
-	v.Check(movie.Runtime > 0, "runtime", "must be a positive integer")
-	v.Check(movie.Genres != nil, "genres", "must be provided")
-	v.Check(len(movie.Genres) >= 1, "genres", "must contain at least 1 genre")
-	v.Check(len(movie.Genres) <= 5, "genres", "must not contain more than 5 genres")
-	v.Check(validator.Unique(movie.Genres), "genres", "must not contain duplicate values")
+func ValidateAnime(v *validator.Validator, anime *Anime) {
+	v.Check(anime.Title != "", "title", "must be provided")
+	v.Check(len(anime.Title) <= 500, "title", "must not be more than 500 bytes long")
+	v.Check(anime.Year != 0, "year", "must be provided")
+	v.Check(anime.Year >= 1888, "year", "must be greater than 1888")
+	v.Check(anime.Year <= int32(time.Now().Year()), "year", "must not be in the future")
+	v.Check(anime.Runtime != 0, "runtime", "must be provided")
+	v.Check(anime.Runtime > 0, "runtime", "must be a positive integer")
+	v.Check(anime.Genres != nil, "genres", "must be provided")
+	v.Check(len(anime.Genres) >= 1, "genres", "must contain at least 1 genre")
+	v.Check(len(anime.Genres) <= 5, "genres", "must not contain more than 5 genres")
+	v.Check(validator.Unique(anime.Genres), "genres", "must not contain duplicate values")
 }
 
-type MovieModel struct {
+type AnimeModel struct {
 	DB *pgxpool.Pool
 }
 
-func (m MovieModel) Insert(movie *Movie) error {
+func (m AnimeModel) Insert(anime *Anime) error {
 
 	query := `
-INSERT INTO movies (title, year, runtime, genres)
+INSERT INTO animes (title, year, runtime, genres)
 VALUES ($1, $2, $3, $4)
 RETURNING id, created_at, version`
 
-	args := []any{movie.Title, movie.Year, movie.Runtime, movie.Genres}
+	args := []any{anime.Title, anime.Year, anime.Runtime, anime.Genres}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	return m.DB.QueryRow(ctx, query, args...).Scan(&movie.ID, &movie.CreatedAt, &movie.Version)
+	return m.DB.QueryRow(ctx, query, args...).Scan(&anime.ID, &anime.CreatedAt, &anime.Version)
 }
 
-func (m MovieModel) Get(id int64) (*Movie, error) {
-	// The PostgreSQL bigserial type that we're using for the movie ID starts
-	// auto-incrementing at 1 by default, so we know that no movies will have ID values
+func (m AnimeModel) Get(id int64) (*Anime, error) {
+	// The PostgreSQL bigserial type that we're using for the anime ID starts
+	// auto-incrementing at 1 by default, so we know that no animes will have ID values
 	// less than that. To avoid making an unnecessary database call, we take a shortcut
 	// and return an ErrRecordNotFound error straight away.
 	if id < 1 {
 		return nil, ErrRecordNotFound
 	}
-	// Define the SQL query for retrieving the movie data.
+	// Define the SQL query for retrieving the anime data.
 	query := `
 SELECT id, created_at, title, year, runtime, genres, version
-FROM movies
+FROM animes
 WHERE id = $1`
-	// Declare a Movie struct to hold the data returned by the query.
-	var movie Movie
+	// Declare a Anime struct to hold the data returned by the query.
+	var anime Anime
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	// Importantly, use defer to make sure that we cancel the context before the Get()
@@ -74,15 +74,15 @@ WHERE id = $1`
 	defer cancel()
 
 	err := m.DB.QueryRow(ctx, query, id).Scan(
-		&movie.ID,
-		&movie.CreatedAt,
-		&movie.Title,
-		&movie.Year,
-		&movie.Runtime,
-		&movie.Genres,
-		&movie.Version,
+		&anime.ID,
+		&anime.CreatedAt,
+		&anime.Title,
+		&anime.Year,
+		&anime.Runtime,
+		&anime.Genres,
+		&anime.Version,
 	)
-	// Handle any errors. If there was no matching movie found, Scan() will return
+	// Handle any errors. If there was no matching anime found, Scan() will return
 	// a sql.ErrNoRows error. We check for this and return our custom ErrRecordNotFound
 	// error instead.
 	if err != nil {
@@ -93,35 +93,35 @@ WHERE id = $1`
 			return nil, err
 		}
 	}
-	// Otherwise, return a pointer to the Movie struct.
-	return &movie, nil
+	// Otherwise, return a pointer to the Anime struct.
+	return &anime, nil
 }
 
-func (m MovieModel) Update(movie *Movie) error {
+func (m AnimeModel) Update(anime *Anime) error {
 	// Add the 'AND version = $6' clause to the SQL query.
 	query := `
 SELECT id, created_at, title, year, runtime, genres, version
-FROM movies
+FROM animes
 WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '')
 AND (genres @> $2 OR $2 = '{}')
 ORDER BY id`
 
 	args := []any{
-		movie.Title,
-		movie.Year,
-		movie.Runtime,
-		movie.Genres,
-		movie.ID,
-		movie.Version, // Add the expected movie version.
+		anime.Title,
+		anime.Year,
+		anime.Runtime,
+		anime.Genres,
+		anime.ID,
+		anime.Version, // Add the expected anime version.
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	// Execute the SQL query. If no matching row could be found, we know the movie
+	// Execute the SQL query. If no matching row could be found, we know the anime
 	// version has changed (or the record has been deleted) and we return our custom
 	// ErrEditConflict error.
-	err := m.DB.QueryRow(ctx, query, args...).Scan(&movie.Version)
+	err := m.DB.QueryRow(ctx, query, args...).Scan(&anime.Version)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -133,14 +133,14 @@ ORDER BY id`
 	return nil
 }
 
-func (m MovieModel) Delete(id int64) error {
-	// Return an ErrRecordNotFound error if the movie ID is less than 1.
+func (m AnimeModel) Delete(id int64) error {
+	// Return an ErrRecordNotFound error if the anime ID is less than 1.
 	if id < 1 {
 		return ErrRecordNotFound
 	}
 	// Construct the SQL query to delete the record.
 	query := `
-DELETE FROM movies
+DELETE FROM animes
 WHERE id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -157,7 +157,7 @@ WHERE id = $1`
 	if err != nil {
 		return err
 	}
-	// If no rows were affected, we know that the movies table didn't contain a record
+	// If no rows were affected, we know that the animes table didn't contain a record
 	// with the provided ID at the moment we tried to delete it. In that case we
 	// return an ErrRecordNotFound error.
 	if rowsAffected == 0 {
@@ -166,11 +166,11 @@ WHERE id = $1`
 	return nil
 }
 
-func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, Metadata, error) {
-	// Construct the SQL query to retrieve all movie records.
+func (m AnimeModel) GetAll(title string, genres []string, filters Filters) ([]*Anime, Metadata, error) {
+	// Construct the SQL query to retrieve all anime records.
 	query := fmt.Sprintf(`
 SELECT count(*) OVER(), id, created_at, title, year, runtime, genres, version
-FROM movies
+FROM animes
 WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '')
 AND (genres @> $2 OR $2 = '{}')
 ORDER BY %s %s, id ASC
@@ -189,30 +189,30 @@ LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 	}
 
 	defer rows.Close()
-	// Initialize an empty slice to hold the movie data.
-	movies := []*Movie{}
+	// Initialize an empty slice to hold the anime data.
+	animes := []*Anime{}
 	totalRecords := 0
 	// Use rows.Next to iterate through the rows in the resultset.
 	for rows.Next() {
-		// Initialize an empty Movie struct to hold the data for an individual movie.
-		var movie Movie
-		// Scan the values from the row into the Movie struct. Again, note that we're
+		// Initialize an empty Anime struct to hold the data for an individual anime.
+		var anime Anime
+		// Scan the values from the row into the Anime struct. Again, note that we're
 		// using the pq.Array() adapter on the genres field here.
 		err := rows.Scan(
 			&totalRecords,
-			&movie.ID,
-			&movie.CreatedAt,
-			&movie.Title,
-			&movie.Year,
-			&movie.Runtime,
-			&movie.Genres,
-			&movie.Version,
+			&anime.ID,
+			&anime.CreatedAt,
+			&anime.Title,
+			&anime.Year,
+			&anime.Runtime,
+			&anime.Genres,
+			&anime.Version,
 		)
 		if err != nil {
 			return nil, Metadata{}, err
 		}
-		// Add the Movie struct to the slice.
-		movies = append(movies, &movie)
+		// Add the Anime struct to the slice.
+		animes = append(animes, &anime)
 	}
 	// When the rows.Next() loop has finished, call rows.Err() to retrieve any error
 	// that was encountered during the iteration.
@@ -221,7 +221,7 @@ LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 	}
 
 	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
-	// If everything went OK, then return the slice of movies.
-	return movies, metadata, nil
+	// If everything went OK, then return the slice of animes.
+	return animes, metadata, nil
 
 }

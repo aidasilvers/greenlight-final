@@ -1,7 +1,7 @@
 package data
 
 import (
-	"greenlight.zhaksylyk.kz/internal/validator"
+	"greenlight.aida.kz/internal/validator"
 	"math"
 	"strings"
 )

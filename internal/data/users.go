@@ -7,7 +7,7 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
-	"greenlight.zhaksylyk.kz/internal/validator"
+	"greenlight.aida.kz/internal/validator"
 	"time"
 )
 

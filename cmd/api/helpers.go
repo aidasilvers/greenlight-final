@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
-	"greenlight.zhaksylyk.kz/internal/validator"
+	"greenlight.aida.kz/internal/validator"
 	"io"
 	"net/http"
 	"net/url"

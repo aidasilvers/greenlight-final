@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"greenlight.zhaksylyk.kz/internal/data"
-	"greenlight.zhaksylyk.kz/internal/validator"
+	"greenlight.aida.kz/internal/data"
+	"greenlight.aida.kz/internal/validator"
 	"net/http"
 	"time"
 )

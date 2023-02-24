@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base32"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"greenlight.zhaksylyk.kz/internal/validator"
+	"greenlight.aida.kz/internal/validator"
 	"time"
 )
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"greenlight.zhaksylyk.kz/internal/data"
+	"greenlight.aida.kz/internal/data"
 	"net/http"
 )
 
